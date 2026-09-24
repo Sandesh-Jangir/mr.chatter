@@ -3,6 +3,7 @@ import json
 from groq import Groq
 from chat_tools import search_web
 
+# This list gives our llm model the ability to call external tools.
 tools = [
     {
         "type": "function",
@@ -23,10 +24,12 @@ tools = [
     }
 ]
 
+# Setting up the Groq client with the API key from environment variables
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-chat_history = []
+chat_history = [] # Session chat history, which will be sent to the model on each request. This allows the model to maintain context across multiple turns of conversation.
 
+# Main loop: keep going until the user types "exit" or "quit"
 while True:
     user_input = input("You > ")
     if user_input.lower() in ("exit", "quit"):
@@ -44,7 +47,8 @@ while True:
         )
 
         response_message = response.choices[0].message
-
+        
+        # If the model has tool calls, we need to handle them
         if response_message.tool_calls:
             chat_history.append({
                 "role": "assistant",
@@ -62,7 +66,10 @@ while True:
                 ]
             })
 
+            # Handle each tool call, iterating through them and executing the corresponding function
             for tool_call in response_message.tool_calls:
+                
+                # Check if the tool call is for the "search_web" function
                 if tool_call.function.name == "search_web":
                     args = json.loads(tool_call.function.arguments)
                     query = args["query"]
